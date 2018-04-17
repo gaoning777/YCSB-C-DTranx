@@ -17,7 +17,7 @@
 #include "kvdb/btree_db.h"
 #include "kvdb/rtree_db.h"
 #include "kvdb/bang_db.h"
-
+#include "kvdb/cockroach_db.h"
 namespace Ycsb {
 namespace DB {
 
@@ -36,6 +36,8 @@ DB_BASE* DBFactory::CreateDB(std::string dbname, Ycsb::Core::CoreWorkload &wl) {
 		return new HyperdexDB;
 	} else if (dbname == "bangdb") {
 		return new BangDB;
+	} else if (dbname == "cockroach") {
+		return new CockroachDB;
 	} else if (dbname == "btree") {
 		return new BtreeDB(wl);
 	} else if (dbname == "rtree") {

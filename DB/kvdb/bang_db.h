@@ -1,73 +1,238 @@
 /*
- * bang_db.h
+ * Author: Ning Gao(nigo9731@colorado.edu)
+ *         Zhang Liu(zhli5318@colorado.edu)
  *
- *  Created on: Nov 6, 2017
- *      Author: neal
+ * BangDB client Handler
+ *  connect to the coordinator not the other slave nodes
+ *
+ * NOTE: server IP and port will be loaded from bangdb.config during runtime
+ *
+ * NOTE:client_ is databace class in bangdb_client Namespace
+ *
+ * key: {"value": "valuestr"}
  */
 
-#ifndef BANG_DB_H_
-#define BANG_DB_H_
+#ifndef DTRANX_BANG_DB_H_
+#define DTRANX_BANG_DB_H_
+
+#include <bangdb-client/database.h>
+//#include "kvdb.h"
 
 #include "DB/commons.h"
 namespace Ycsb {
 namespace DB {
 
+
 class BangDB: public KVDB {
 public:
-	BangDB(){
-		shareDB = false;
-		keyType = KeyType::STRING;
-	}
+    BangDB(){
+        shareDB = false;
+        keyType = KeyType::STRING;
+    }
 
-	BangDB(const BangDB& other) {
-		std::cout << "BangDB copy contructor is called" << std::endl;
-		ips_ = other.ips_;
-		shareDB = other.shareDB;
-		keyType = other.keyType;
-	}
+    BangDB(const BangDB& other) {
+        std::cout << "BangDB copy contructor is called" << std::endl;
+        shareDB = other.shareDB;
+        keyType = other.keyType;
+    }
 
-	~BangDB() {
-		Close();
-	}
+    ~BangDB() {
+        Close();
+    }
 
-	KVDB* Clone(int index) {
-		BangDB *instance = new BangDB(*this);
-		std::cout << "Cloning BangDB called" << std::endl;
-		return instance;
-	}
+    KVDB* Clone(int index) {
+        BangDB *instance = new BangDB(*this);
+        std::cout << "Cloning BangDB called" << std::endl;
+	bangdb_client::bangdbEnv dbenv;
+        instance->client_ = dbenv.openDatabase((char*)"mydb");
+        bangdb_client::table_env tenv;
 
-	void Init(std::vector<std::string> ips, std::string selfAddress, int localStartPort,
-			bool fristTime) {
-		ips_ = ips;
-		assert(ips_.size() > 0);
-	}
+        //configure table properties
+        //tenv.set_key_size_byte();
+        tenv.set_persist_type(bangdb_client::PERSIST_ONLY);
+        tenv.set_autocommit_state(1);
 
-	void Close() {
-	}
+        if((instance->tbl_ = client_->gettable((char*)"mytbl", bangdb_client::OPENCREATE, &tenv)) == NULL)
+        {
+            printf("table NULL error, quitting");
+            exit(-1);
+        }
+        return instance;
+    }
 
-	int Read(std::vector<std::string> keys) {
-	}
+    void Init(std::vector<std::string> ips, std::string selfAddress, int localStartPort,
+            bool fristTime) {
+	bangdb_client::bangdbEnv dbenv;
+        client_ = dbenv.openDatabase((char*)"mydb");
+        bangdb_client::table_env tenv;
 
-	int ReadSnapshot(std::vector<std::string> keys) {
-		/*
-		 * read snapshot is not supported by bangdb yet
-		 */
-		return kOK;
-	}
+        //configure table properties
+        //tenv.set_key_size_byte();
+        tenv.set_persist_type(bangdb_client::PERSIST_ONLY);
+        tenv.set_autocommit_state(true);
 
-	int Update(std::vector<KVPair> writes) {
-	}
+        if((tbl_ = client_->gettable((char*)"mytbl", bangdb_client::OPENCREATE, &tenv)) == NULL)
+        	{
+        		printf("table NULL error, quitting");
+        		exit(-1);
+        	}
+    }
 
-	int ReadWrite(std::vector<std::string> reads, std::vector<KVPair> writes) {
-	}
+    void Close() {
+	if (client_) {
+            delete tbl_;
+            client_->closedatabase();
+            delete client_;
+        }
+    }
 
-	int Insert(std::vector<KVPair> writes) {
-	}
+    int Read(std::vector<std::string> keys) {
+    	bangdb_client::connection *conn = tbl_->getconnection();
+    	if(!conn)
+    	{
+    		printf("connection null error, please change the max conn config in bangdb.config, it could be the reason\n");
+    		return -1;
+    	}
+
+    	bangdb_client::bangdb_txn* txn;
+    	client_->begin_transaction(txn);
+
+        for (auto it = keys.begin(); it != keys.end(); ++it) {
+
+        		bangdb_client::FDT ikey, *ival = NULL;
+			ikey.data = (char*)it->c_str();
+        		ikey.length = it->size();
+
+        		if((ival = conn->get(&ikey, txn)) == NULL) {
+        	    		client_->abort_transaction(txn);
+        			printf("individual get transaction failed ");
+        	    		return kErrorNoData;
+        	    	}
+        }
+        if (client_->commit_transaction(txn) >= 0) {
+        		return kOK;
+        	} else {
+        		return kErrorConflict;
+        	}
+
+    }
+
+    int ReadSnapshot(std::vector<std::string> keys) {
+        /*
+         */
+        return kOK;
+    }
+
+    int Update(std::vector<KVPair> writes) {
+
+		bangdb_client::connection *conn = tbl_->getconnection();
+		if(!conn)
+		{
+			printf("connection null error, please change the max conn config in bangdb.config, it could be the reason\n");
+			return -1;
+		}
+
+		bangdb_client::bangdb_txn* txn;
+		client_->begin_transaction(txn);
+
+		for (auto it = writes.begin(); it != writes.end(); ++it) {
+    			bangdb_client::FDT ikey, ival;
+    			ikey.data = (char*)it->first.c_str();
+    			ikey.length = it->first.size();
+    			ival.data = (char*)it->second.c_str();
+    			ival.length = it->second.size();
+    			if(conn->put(&ikey, &ival, bangdb_client::INSERT_UNIQUE, txn) < 0) {
+    				printf("individual update transaction failed ");
+    				exit(1);
+
+    			}
+		}
+
+		if (client_->commit_transaction(txn) >= 0) {
+			return kOK;
+		} else {
+			return kErrorConflict;
+		}
+    }
+
+    int ReadWrite(std::vector<std::string> reads, std::vector<KVPair> writes) {
+
+    		bangdb_client::connection *conn = tbl_->getconnection();
+    		if(!conn) {
+    			printf("connection null error, please change the max conn config in bangdb.config, it could be the reason\n");
+    			return -1;
+    		}
+
+    		bangdb_client::bangdb_txn* txn;
+    		client_->begin_transaction(txn);
+
+    		for (auto it = reads.begin(); it != reads.end(); ++it) {
+    			bangdb_client::FDT ikey, *ival = NULL;
+    			ikey.data = (char*)it->c_str();
+    			ikey.length = it->size();
+
+       		if((ival = conn->get(&ikey, txn)) == NULL) {
+        	    		printf("individual read transaction failed ");
+        	    		return kErrorNoData;
+        	    	}
+        }
+        for (auto it = writes.begin(); it != writes.end(); ++it) {
+        		bangdb_client::FDT ikey, ival;
+        	    ikey.data = (char*)it->first.c_str();
+        	    ikey.length = it->first.size();
+        	    ival.data = (char*)it->second.c_str();
+        	    ival.length = it->second.size();
+        	    if(conn->put(&ikey, &ival, bangdb_client::INSERT_UNIQUE, txn) < 0) {
+        	        printf("individual write transaction failed ");
+        	        	exit(1);
+
+        	    }
+        }
+        if (client_->commit_transaction(txn) >= 0) {
+        		return kOK;
+        	} else {
+        		return kErrorConflict;
+        	}
+    }
+
+    int Insert(std::vector<KVPair> writes) {
+
+    		bangdb_client::connection *conn = tbl_->getconnection();
+    		if(!conn)
+    		{
+    			printf("connection null error, please change the max conn config in bangdb.config, it could be the reason\n");
+    			return -1;
+    		}
+
+    		bangdb_client::bangdb_txn* txn;
+        client_->begin_transaction(txn);
+
+        for (auto it = writes.begin(); it != writes.end(); ++it) {
+        		bangdb_client::FDT ikey, ival;
+        		ikey.data = (char*)it->first.c_str();
+        		ikey.length = it->first.size();
+        		ival.data = (char*)it->second.c_str();
+        		ival.length = it->second.size();
+        		if(conn->put(&ikey, &ival, bangdb_client::INSERT_UNIQUE, txn) < 0) {
+        			printf("individual insert transaction failed ");
+        			exit(1);
+
+        		}
+        }
+
+        if (client_->commit_transaction(txn) >= 0) {
+        		return kOK;
+        } else {
+        		return kErrorConflict;
+        }
+    }
+
 private:
-	std::vector<std::string> ips_;
+    bangdb_client::database *client_;
+    bangdb_client::table* tbl_;
 };
-
 } // DB
 } // Ycsb
 
-#endif /* BANG_DB_H_ */
+#endif /* DTRANX_BANG_DB_H_ */
+

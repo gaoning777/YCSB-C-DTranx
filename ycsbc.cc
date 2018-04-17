@@ -121,7 +121,7 @@ int main(const int argc, const char *argv[]) {
 	DBData dbData;
 	dbData.dbName = props["dbname"];
 	if (props["dbname"] == "dtranx" || props["dbname"] == "hyperdex" || props["dbname"] == "btree"
-			|| props["dbname"] == "rtree" || props["dbname"] == "bangdb") {
+			|| props["dbname"] == "rtree" || props["dbname"] == "bangdb" || props["dbname"] == "cockroach") {
 		dbData.isKV = true;
 		std::string clusterFileName = props.GetProperty("clusterfilename", "");
 		if (clusterFileName.empty()) {
