@@ -43,7 +43,7 @@ public:
         CockroachDB *instance = new CockroachDB(*this);
         std::cout << "Cloning CockroachDB called" << std::endl;
 	//current connectiion is hard coded
-	instance->client_ = new pqxx::connection("postgresql://ycsb@128.138.157.110:26257/ycsb");
+	instance->client_ = new pqxx::connection("postgresql://ycsb@192.168.0.1:26257/ycsb");
 
         return instance;
     }
@@ -51,7 +51,7 @@ public:
     void Init(std::vector<std::string> ips, std::string selfAddress, int localStartPort,
             bool fristTime) {
 	//current connectiion is hard coded
-	client_ = new pqxx::connection("postgresql://ycsb@128.138.157.110:26257/ycsb");
+	client_ = new pqxx::connection("postgresql://ycsb@192.168.0.1:26257/ycsb");
     }
 
     void Close() {
@@ -66,7 +66,7 @@ public:
 		pqxx::work tx(*client_);
 		pqxx::result r;
         for (auto it = keys.begin(); it != keys.end(); ++it) {
-			r = tx.exec("SELECT value FROM kv WHERE ID = " + const_cast<std::string&>(*it));
+			r = tx.exec("SELECT value FROM kv WHERE key = b'" + const_cast<std::string&>(*it) + "'");
      			
 			if(r[0][0].is_null()) {
         	    tx.abort();
@@ -95,7 +95,7 @@ public:
 		pqxx::result r;
 
 		for (auto it = writes.begin(); it != writes.end(); ++it) {
-    		tx.exec("UPDATE kv SET value = " + it->second + " WHERE key = " + it->first);
+    		tx.exec("UPDATE kv SET value = b'" + it->second + "' WHERE key = b'" + it->first + "'");
 //            cout << "update write key: " << it->first << " and the value is "
 //                    << it->second << endl;
 		}
@@ -116,7 +116,7 @@ public:
 
 
     	for (auto it = reads.begin(); it != reads.end(); ++it) {
-            r = tx.exec("SELECT value FROM kv WHERE ID = " + const_cast<std::string&>(*it));
+            r = tx.exec("SELECT value FROM kv WHERE key = b'" + const_cast<std::string&>(*it) + "'");
 
             if(r[0][0].is_null()) {
                 tx.abort();
@@ -125,7 +125,7 @@ public:
             }
 		}
         for (auto it = writes.begin(); it != writes.end(); ++it) {
-            tx.exec("UPDATE kv SET value = " + it->second + " WHERE key = " + it->first);
+            tx.exec("UPDATE kv SET value = b'" + it->second + "' WHERE key = b'" + it->first + "'");
 //            cout << "update write key: " << it->first << " and the value is "
 //                    << it->second << endl;
         }
@@ -143,15 +143,15 @@ public:
     int Insert(std::vector<KVPair> writes) {
         pqxx::work tx(*client_);
         pqxx::result r;
-
         for (auto it = writes.begin(); it != writes.end(); ++it) {
-			tx.exec("INSERT INTO kv VALUES (" + it->first + ", b'" + it->second + "')");       
+			tx.exec("INSERT INTO kv VALUES ( b'" + it->first + "', b'" + it->second + "')");    
         }
 
         try{
             tx.commit();
         } catch (const std::exception &e){
-            return kErrorConflict;
+				std::cout<<"insert commit error"<<std::endl;
+			return kErrorConflict;
         }
 
         return kOK;
