@@ -162,7 +162,8 @@ void CoreWorkload::Init(const Properties &p) {
 
 	} else if (request_dist == "latest") {
 		key_chooser_ = new Core::SkewedLatestGenerator(insert_key_sequence_);
-
+	} else if (request_dist == "counter") {
+		key_chooser_ = new Core::CounterGenerator(0);
 	} else {
 		throw Util::Exception("Unknown request distribution: " + request_dist);
 	}
