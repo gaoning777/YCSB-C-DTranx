@@ -149,6 +149,16 @@ int main(const int argc, const char *argv[]) {
 		 * port usage is somewhat static and no need to add configuration file
 		 * for ycsb program
 		 */
+
+
+		/*
+		 * Cockroach specific init
+		 */
+		std::cout<<props["dbname"]<<std::endl;
+		if(props["dbname"] == "cockroach"){
+			std::cout<<"hereeeee"<<std::endl;
+			dbData.kvdb->InitCockroach(props["db_user"], props["db_name"]);
+		}
 		dbData.kvdb->Init(dbData.ips, props["selfAddress"], LOCAL_USABLE_PORT_START,
 				std::stoi(props["firsttime"]) != 0);
 	} else {
@@ -357,6 +367,22 @@ string ParseCommandLine(int argc, const char *argv[], Ycsb::Core::Properties &pr
 			}
 			props.SetProperty("dbname", argv[argindex]);
 			argindex++;
+		} else if (strcmp(argv[argindex], "-db_user") == 0) {
+			argindex++;
+			if (argindex >= argc) {
+				UsageMessage(argv[0]);
+				exit(0);
+				}
+			props.SetProperty("db_user", argv[argindex]);
+			argindex++;
+		} else if (strcmp(argv[argindex], "-db_name") == 0) {
+			argindex++;
+			if (argindex >= argc) {
+				UsageMessage(argv[0]);
+				exit(0);
+			}
+			props.SetProperty("db_name", argv[argindex]);
+			argindex++;
 		} else if (strcmp(argv[argindex], "-m") == 0) {
 			argindex++;
 			if (argindex >= argc) {
@@ -434,6 +460,9 @@ void UsageMessage(const char *command) {
 			<< endl;
 	cout << "  -threads n: execute using n threads" << endl;
 	cout << "  -db dbname: specify the name of the DB to use" << endl;
+	cout << "  -db_user db_user: some DB may require a username, e.g. CockroachDB" << endl;
+	cout << "  -db_name db_name: some DB may require a internal DB name, e.g. CockroachDB" << endl;
+
 	cout
 			<< "  -m poolcached: whether to enable mempool for ddsbrick data structures (options:0,1, default: 1 meaning enable)"
 			<< endl;

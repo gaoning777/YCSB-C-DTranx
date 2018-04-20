@@ -37,6 +37,11 @@ public:
 	 */
 	virtual void Init(std::vector<std::string> ips, std::string selfAddress, int localStartPort,
 			bool fristTime = false) = 0;
+
+	void InitCockroach(std::string db_user, std::string db_name){
+		db_user_ = db_user;
+		db_name_ = db_name;
+	}
 	virtual void Close() = 0;
 	/*
 	 * Reads a record from the database.
@@ -169,6 +174,11 @@ protected:
 	 */
 	bool shareDB;
 	KeyType keyType;
+
+
+	std::string db_user_;
+	std::string db_name_;
+
 };
 } // DB
 } // Ycsb
