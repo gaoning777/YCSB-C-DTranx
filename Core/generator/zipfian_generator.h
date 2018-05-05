@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cassert>
+#include "generator.h"
 #include "Util/funcs.h"
 
 namespace Ycsb {

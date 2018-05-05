@@ -23,3 +23,8 @@ clean:
 	$(RM) $(EXEC)
 
 .PHONY: $(SUBDIRS)
+
+unit:
+	cd Test/UnitTest && $(MAKE)
+
+.DEFUALT_GOAL = all
