@@ -5,3 +5,4 @@
 *.d
 ycsbc
 Scripts/HashGenerator
+Test/UnitTest/test
