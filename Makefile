@@ -20,6 +20,8 @@ clean:
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir $@; \
 	done
+	cd Test/UnitTest && $(MAKE) clean
+	cd ../..
 	$(RM) $(EXEC)
 
 .PHONY: $(SUBDIRS)

@@ -30,5 +30,14 @@ For hyperdex support, check out the website for installation http://hyperdex.org
 		3.3 Run InitializeHyperdex.py and feed it with hashkey file
 				python InitializeHyperdex.py hashkeys
 
+
+Build  
+1. Build the project  
+	make  
+2. Build unit tests  
+	make unit  
+3. Run unit tests  
+	./Test/UnitTest/test  
+
 Maintained by Ning Gao
 University of Colorado Boulder
