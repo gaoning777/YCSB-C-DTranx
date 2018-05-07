@@ -1,7 +1,7 @@
 CC=g++-4.9
 CFLAGS=-std=c++11 -c -g -Wall
 INCLUDES=-I../
-SUBDIRS=generator
+SUBDIRS=Generator
 SOURCES=$(wildcard *.cc)
 OBJECTS=$(SOURCES:.cc=.o)
 HEADERS=$(wildcard *.h)

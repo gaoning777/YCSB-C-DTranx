@@ -21,9 +21,9 @@
 #include <mutex>
 #include "DB/tabledb/table_db.h"
 #include "properties.h"
-#include "generator/generator.h"
-#include "generator/discrete_generator.h"
-#include "generator/counter_generator.h"
+#include "Generator/generator.h"
+#include "Generator/discrete_generator.h"
+#include "Generator/counter_generator.h"
 #include "Util/funcs.h"
 
 namespace Ycsb {
