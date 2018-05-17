@@ -7,6 +7,7 @@
 //
 
 #include "Generator/uniform_generator.h"
+#include "Generator/normal_generator.h"
 #include "Generator/zipfian_generator.h"
 #include "Generator/scrambled_zipfian_generator.h"
 #include "Generator/skewed_latest_generator.h"
@@ -150,7 +151,7 @@ void CoreWorkload::Init(const Properties &p) {
 		//changed to max_key_value from record_count
 		key_chooser_ = new UniformGenerator(0, max_key_value_ - 1);
 
-	} else if (request_dist == "zipfian") {
+	} else if (request_dist == "scrambled_zipfian") {
 		// If the number of keys changes, we don't want to change popular keys.
 		// So we construct the scrambled zipfian generator with a keyspace
 		// that is larger than what exists at the beginning of the test.
@@ -159,7 +160,10 @@ void CoreWorkload::Init(const Properties &p) {
 		int op_count = std::stoi(p.GetProperty(OPERATION_COUNT_PROPERTY));
 		int new_keys = (int) (op_count * insert_proportion * 2); // a fudge factor
 		key_chooser_ = new ScrambledZipfianGenerator(record_count_ + new_keys);
-
+	} else if(request_dist == "zipfian"){
+		key_chooser_ = new ZipfianGenerator(0, max_key_value_ - 1);
+	} else if(request_dist == "normal"){
+		key_chooser_ = new NormalGenerator(0, max_key_value_ - 1);
 	} else if (request_dist == "latest") {
 		key_chooser_ = new Core::SkewedLatestGenerator(insert_key_sequence_);
 	} else if (request_dist == "counter") {

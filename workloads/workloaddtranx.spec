@@ -46,7 +46,7 @@ snapshot=1
 # Key chooser
 #	keymaxvalue: max key value
 #		if the requestdistribution is uniform, key values are chosen between (0, keymaxvalue-1)
-# 	requestdistribution: decides how keys are generated
+# 	requestdistribution: decides how keys are generated, options are uniform, zipfian, normal, and counter
 #		default: uniform distribution
 #	insertorder: hashed/nohash
 #		it's used in key build, after key is choosen from requestdistribution, the uint64_t
